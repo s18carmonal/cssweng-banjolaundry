@@ -42,8 +42,18 @@ body { font-size: 13px; line-height: 1.5; }
 .login-page { display: grid; place-items: center; padding: 24px; background: var(--page-background); }
 .login-card { width: min(440px,100%); }
 .login-card h1 { font-size: 27px; margin: 12px 0; }
-.app { background: var(--page-background); overflow: clip; }
-.sidebar { background: var(--surface); padding: 24px 14px; }
+.app { background: var(--page-background); overflow: visible; }
+.sidebar {
+  background: var(--surface);
+  padding: 24px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  z-index: 10;
+}
 .sidebar-header { height: 36px; }
 .brand { font-size: 17px; gap: 9px; color: var(--text-primary); letter-spacing: -.6px; }
 .brand-icon { width: 32px; height: 36px; flex-basis: 32px; border-radius: 11px; background: var(--brand); color: white; box-shadow: 0 3px 8px rgb(0 134 201 / 15%); }
@@ -294,3 +304,10 @@ a, select, summary { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
 @media (forced-colors: active) { * { scrollbar-color: auto; } .status-badge, .primary-button, .filter-tab.active { border: 1px solid ButtonText; } }
+
+/* Settings page */
+#settingsPage .panel { margin-bottom: 28px; }
+#settingsPage .panel-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; }
+#settingsPage .panel-actions { flex-shrink: 0; }
+.danger-text { color: var(--danger); }
+.danger-text:hover { opacity: 0.8; }

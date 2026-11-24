@@ -550,14 +550,14 @@
       : 'customers';
 
     byId('customerPage').classList.toggle('hidden', page !== 'customers');
-    byId('otherPage').classList.toggle('hidden', page !== 'settings');
+    byId('otherPage').classList.add('hidden');
     byId('overviewPage').classList.toggle('hidden', page !== 'overview');
     if (byId('overviewTitle')) byId('overviewTitle').textContent = 'Overview';
     byId('transactionsPage').classList.toggle('hidden', page !== 'transactions');
-    document.title = `${{overview: 'Overview', customers: 'Customers', transactions: 'Transactions', settings: 'Settings'}[page]} | BubbleWash`;
+    if (byId('settingsPage')) byId('settingsPage').classList.toggle('hidden', page !== 'settings');
+    document.title = `${{overview: 'Overview', customers: 'Customers', transactions: 'Transactions', settings: 'Settings'}[page]} | Banjo Laundry`;
 
     if (page !== 'customers') {
-      byId('otherPageTitle').textContent = page === 'overview' ? 'Overview' : 'Settings';
     }
 
     document.querySelectorAll('[data-page]').forEach((link) => {

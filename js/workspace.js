@@ -131,6 +131,7 @@
     $('orderCustomer').innerHTML = '<option value="">Select a customer</option>' + app.getCustomers().map((customer) =>
       `<option value="${app.escape(customer.id)}">${app.escape(`${customer.firstName} ${customer.lastName}${customer.phone ? ' - ' + customer.phone : ''}`)}</option>`).join('');
     window.LaundryCustomerCombobox.enhanceSelect($('orderCustomer'));
+    $('orderService').innerHTML = Object.entries(services).filter(([, service]) => service.service_status === 'Active').map(([id, service]) => `<option value="${id}">${service.service_name} · ${money(service.unit_price)} ${service.pricing_unit}</option>`).join('');
     $('orderDate').value = localDate();
     $('orderCompletion').value = '';
     $('orderError').classList.add('hidden');
@@ -237,6 +238,8 @@
     seedCustomers, getOrders: () => orders, getPayments: () => payments,
     getCustomers: app.getCustomers, getCustomerName: customerName,
     getService: (id) => services[id] || { service_name: 'General service', unit_price: 0, pricing_unit: 'per kg' },
+    updateService: (service) => { services[service.service_id] = service; },
+    _allServices: services,
     money, escape: app.escape, icon: app.icon, showToast: app.showToast,
     openCreateOrder, openStatus, exportCSV,
     openOrder: (id) => {

@@ -1,6 +1,6 @@
 (async function () {
   'use strict';
-  const scriptNames=['dates','customer-combobox','mock-data','app','workspace','order-views','payment-editor','overview','transactions'];
+  const scriptNames=['dates','customer-combobox','mock-data','app','workspace','order-views','payment-editor','overview','transactions','settings'];
   const pendingKeys=new Map();
   async function request(url,{method='GET',body}={}) {
     const headers={'Content-Type':'application/json'};

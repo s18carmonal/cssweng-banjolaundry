@@ -9,7 +9,7 @@ async function nextId(db,name,session) {const record=await db.collection('counte
 async function initialize(db) {
   const existing=await db.listCollections({}, {nameOnly:true}).toArray();
   const marker=existing.some((collection)=>collection.name==='app_metadata')?await db.collection('app_metadata').findOne({_id:'schema'}):null;
-  if(marker&&(marker.app!=='banjolaundry'||marker.version!==1))fail('This database uses a different application/schema. Choose a new development database.',409);
+  if(marker&&(!['bubblewash','banjolaundry'].includes(marker.app)||marker.version!==1))fail('This database uses a different application/schema. Choose a new development database.',409);
   if(!marker) {
     for(const name of ['customers','orders','payments','users','services'])if(existing.some((collection)=>collection.name===name)&&await db.collection(name).countDocuments({})>0)fail('Use a new, empty database name for Banjo Laundry. Existing collections were not modified.',409);
   }
@@ -23,7 +23,7 @@ async function initialize(db) {
   await db.collection('sessions').createIndex({expires_at:1},{expireAfterSeconds:0});
   await db.collection('sessions').createIndex({token_hash:1},{unique:true});
   await db.collection('operations').createIndex({user_id:1,key:1},{unique:true});
-  await db.collection('app_metadata').updateOne({_id:'schema'},{$setOnInsert:{app:'banjolaundry',version:1,created_at:new Date()}},{upsert:true});
+  await db.collection('app_metadata').updateOne({_id:'schema'},{$set:{app:'banjolaundry',version:1},$setOnInsert:{created_at:new Date()}},{upsert:true});
 }
 async function provision(db,{username,password}) {
   text(username,'Admin username',30);

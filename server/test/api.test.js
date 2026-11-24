@@ -12,7 +12,7 @@ const origin='http://localhost:3000';
 const pass='Test-only-password-123!';
 before(async()=>{
   replica=await MongoMemoryReplSet.create({replSet:{count:1},instanceOpts:[{args:['--wiredTigerCacheSizeGB','0.25']}]});
-  client=new MongoClient(replica.getUri());await client.connect();db=client.db('bubblewash_test');await initialize(db);await provision(db,{username:'testadmin',password:pass});
+  client=new MongoClient(replica.getUri());await client.connect();db=client.db('banjolaundry_test');await initialize(db);await provision(db,{username:'testadmin',password:pass});
   app=await createApp({client,db,origin});agent=request.agent(app);await agent.post('/api/auth/login').set('Origin',origin).send({username:'testadmin',password:pass}).expect(200);
 }, {timeout:240000});
 after(async()=>{await client?.close();await replica?.stop();});

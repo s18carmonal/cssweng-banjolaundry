@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#eaf6ff">
-  <meta name="description" content="BubbleWash laundry workspace for customers, orders, and payment history.">
-  <title>Customers | BubbleWash</title>
+  <meta name="description" content="Banjo Laundry workspace for customers, orders, and payment history.">
+  <title>Customers | Banjo Laundry</title>
 
   <!-- The compiled stylesheet is checked in, so this page works without npm. -->
   <link rel="stylesheet" href="./css/output.css">
@@ -19,9 +19,9 @@
     <!-- SIDEBAR: Only the sections that were not crossed out in the reference. -->
     <aside class="sidebar" aria-label="Primary navigation">
       <div class="sidebar-header">
-        <a class="brand" href="#overview" aria-label="BubbleWash home">
+        <a class="brand" href="#overview" aria-label="Banjo Laundry home">
           <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M5 8h14M8 5.5h.01M11 5.5h.01"/><circle cx="12" cy="14" r="4"/><path d="M8.5 14c2-2 4 2 7 0"/></svg></span>
-          <span class="brand-name">BubbleWash<small>PRO POS <span>· Laundry care</span></small></span>
+          <span class="brand-name">Banjo Laundry<small>POS <span>· Laundry care</span></small></span>
         </a>
         <button
           class="icon-button sidebar-toggle"
@@ -60,7 +60,7 @@
     </aside>
 
     <main class="main-content">
-      <div class="workspace-context"><span class="workspace-identity">A fresh start for every load.<span class="workspace-edition">BubbleWash workspace</span></span><span class="demo-caption">Demo workspace</span></div>
+      <div class="workspace-context"><span class="workspace-identity">A fresh start for every load.<span class="workspace-edition">Banjo Laundry workspace</span></span><span class="demo-caption">Demo workspace</span></div>
       <section class="workspace-page hidden" id="overviewPage" aria-labelledby="overviewTitle"></section>
       <section class="workspace-page hidden" id="transactionsPage" aria-labelledby="transactionsTitle"></section>
       <!-- CUSTOMER LIST -->
@@ -139,6 +139,84 @@
           <p>Your team can add this feature later.</p>
           <a class="primary-button" href="#customers">Back to customers</a>
         </div>
+      </section>
+
+      <!-- SETTINGS PAGE -->
+      <section class="workspace-page hidden" id="settingsPage" aria-labelledby="settingsTitle">
+        <header class="page-header">
+          <div>
+            <h1 id="settingsTitle">Settings</h1>
+            <p>Manage services, payment methods, and admin users.</p>
+          </div>
+        </header>
+
+        <!-- Services Management -->
+        <section class="panel" aria-labelledby="servicesHeading">
+          <header class="panel-header">
+            <div class="panel-heading">
+              <h2 id="servicesHeading">Services</h2>
+              <p>Add, edit, or deactivate laundry service types and their pricing.</p>
+            </div>
+            <div class="panel-actions">
+              <button class="primary-button signature-action" type="button" id="addServiceButton">
+                <span data-icon="plus" aria-hidden="true"></span>
+                Add service
+              </button>
+            </div>
+          </header>
+          <div class="table-container" tabindex="0" role="region" aria-label="Services table">
+            <table class="workspace-table">
+              <thead>
+                <tr>
+                  <th scope="col">Service name</th>
+                  <th scope="col">Unit price</th>
+                  <th scope="col">Pricing unit</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="servicesRows"></tbody>
+            </table>
+            <div class="empty-state hidden" id="servicesEmpty" role="status">
+              <strong>No services configured</strong>
+              <p>Add a service type to get started.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Admin Users Management -->
+        <section class="panel" aria-labelledby="adminUsersHeading">
+          <header class="panel-header">
+            <div class="panel-heading">
+              <h2 id="adminUsersHeading">Admin users</h2>
+              <p>Manage admin and staff accounts for the workspace.</p>
+            </div>
+            <div class="panel-actions">
+              <button class="primary-button signature-action" type="button" id="addAdminButton">
+                <span data-icon="plus" aria-hidden="true"></span>
+                Add user
+              </button>
+            </div>
+          </header>
+          <div class="table-container" tabindex="0" role="region" aria-label="Admin users table">
+            <table class="workspace-table">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Username</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminRows"></tbody>
+            </table>
+            <div class="empty-state hidden" id="adminEmpty" role="status">
+              <strong>No users configured</strong>
+              <p>Add an admin or staff user to get started.</p>
+            </div>
+          </div>
+        </section>
       </section>
     </main>
   </div>

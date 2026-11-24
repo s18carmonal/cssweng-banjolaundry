@@ -1,0 +1,128 @@
+================================================================================
+BANJO LAUNDRY - SUMMARY OF CHANGES & TESTING GUIDE
+================================================================================
+
+1. OVERVIEW OF CHANGES
+--------------------------------------------------------------------------------
+A. REBRANDING: "Bubble Wash" -> "Banjo Laundry"
+   - index.html:
+     * Updated <meta name="description"> to "Banjo Laundry workspace..."
+     * Updated <title> from "Customers | BubbleWash" to "Customers | Banjo Laundry"
+     * Updated sidebar brand link aria-label to "Banjo Laundry home"
+     * Updated brand display text to "Banjo Laundry" with "POS · Laundry care"
+     * Updated workspace identity edition to "Banjo Laundry workspace"
+   - js/app.js:
+     * Updated document.title dynamic formatting to use "| Banjo Laundry"
+   - server/app.js:
+     * Renamed authentication session cookie from "bubblewash_session" to "banjolaundry_session"
+   - server/database.js:
+     * Updated database schema identifier marker to "banjolaundry"
+     * Updated error messages referencing "BubbleWash" to "Banjo Laundry"
+   - server/start.js:
+     * Default development database name updated to "banjolaundry_development"
+     * Startup server log updated to display "Banjo Laundry"
+   - server/public/login.html:
+     * Updated <title> to "Sign in | Banjo Laundry"
+     * Updated login modal eyebrow to "BANJO LAUNDRY WORKSPACE"
+   - server/test/api.test.js:
+     * Updated test database name to "banjolaundry_test"
+
+B. SETTINGS VISIBILITY & NAVIGATION FIX
+   - css/workspace.css:
+     * Updated `.sidebar` to use `position: sticky; top: 0; height: 100vh;` and `.app` to `overflow: visible;`
+       Reason: On Overview and Transactions tabs, long tables and summary cards caused the main content to stretch to 1500px+, which previously pushed the sidebar's footer (containing Settings with `margin-top: auto`) off-screen below the viewport. The sidebar and Settings link are now pinned and perpetually visible in the viewport across Overview, Customers, and Transactions.
+     * Added styling for `#settingsPage` panels, headers, actions, and status badges.
+   - js/app.js:
+     * Updated `navigateTo(hash)` router function so that navigating to `#settings` properly displays `#settingsPage` and hides `#customerPage`, `#overviewPage`, and `#transactionsPage`, with the Settings navigation link active in the sidebar.
+
+C. SETTINGS FEATURE 1: SERVICES MANAGEMENT
+   - index.html:
+     * Added a Services Management section under `#settingsPage` with a table listing Service Name, Unit Price, Pricing Unit (per kg / per load), Status (Active / Inactive), and action buttons.
+     * Integrated Add Service button.
+   - js/settings.js:
+     * Implemented modal dialog `#serviceOverlay` for adding and editing services.
+     * Fields supported:
+       - Service Name (required, up to 50 characters)
+       - Unit Price in PHP (required, positive decimal)
+       - Pricing Unit ("per kg" or "per load")
+       - Service Status ("Active" or "Inactive")
+       - Description (optional)
+     * Added quick Deactivate/Activate toggle directly from the table.
+     * Real-time synchronization with `LaundryWorkspace._allServices` and `openCreateOrder()` so newly added or modified active services immediately appear in the Create Order dropdown.
+     * Full dual-mode support: localStorage persistence for standalone browser demo mode, and REST API calls (`POST /api/services`, `PATCH /api/services/:id`) for MongoDB mode.
+   - server/app.js:
+     * Added `POST /api/services` (admin-only) to insert new services into MongoDB.
+     * Added `PATCH /api/services/:id` (admin-only) to update existing service details and active status.
+
+D. SETTINGS FEATURE 2: ADMIN USER MANAGEMENT
+   - index.html:
+     * Added an Admin Users section under `#settingsPage` displaying user Name, Username, Role, Status, and Edit action.
+     * Integrated Add User button.
+   - js/settings.js:
+     * Implemented modal dialog `#adminOverlay` for creating and editing user accounts.
+     * Fields supported:
+       - First Name (required)
+       - Last Name (required)
+       - Username (required, unique)
+       - Password (required for new users, min 12 characters; optional on edit to keep existing)
+       - Role ("Admin" or "Staff")
+       - Account Status ("Active" or "Inactive")
+     * Full dual-mode support: localStorage persistence for standalone demo mode, and REST API calls (`POST /api/users`, `PATCH /api/users/:id`) for MongoDB mode.
+   - server/app.js:
+     * Added `POST /api/users` (admin-only) to create new users with scrypt password hashing and duplicate checks.
+     * Added `PATCH /api/users/:id` (admin-only) to update user details, role, status, and optionally password.
+   - server/service.js:
+     * Updated `snapshot()` so the bootstrap endpoint returns full user accounts (excluding password hash) to populate the admin accounts list.
+
+E. BOOTSTRAP INTEGRATION
+   - js/bootstrap.js:
+     * Added `'settings'` to `scriptNames` array so `js/settings.js` is automatically loaded during bootstrap.
+
+
+================================================================================
+2. HOW TO TEST
+================================================================================
+
+A. STANDALONE FRONTEND TEST (No database required)
+   1. Open `index.html` directly in any web browser (or serve it via a local static server, e.g. `npx --yes http-server . -p 4173 -c-1` or Live Server).
+   2. Verify Branding:
+      - Look at the sidebar top left: The brand says "Banjo Laundry" (with "POS · Laundry care").
+      - Look at the top bar context: It reads "Banjo Laundry workspace".
+      - Look at the browser tab title: It shows "Customers | Banjo Laundry".
+   3. Verify Settings Visibility across All Tabs:
+      - Click "Overview" in the sidebar navigation (or go to `#overview`). Note that the page is long with summary cards, but the "Settings" button in the sidebar footer remains fixed and visible at the bottom left of your screen.
+      - Click "Transactions" in the sidebar navigation (or go to `#transactions`). Observe that the "Settings" button in the sidebar footer remains pinned and visible at the bottom left.
+      - Click "Customers" in the sidebar navigation (or go to `#customers`). Settings remains visible.
+   4. Test Settings Page:
+      - Click "Settings" in the sidebar footer (or navigate to `#settings`).
+      - Notice the page title changes to "Settings | Banjo Laundry", and the Settings page displays two sections: "Services" and "Admin users".
+   5. Test Service Management:
+      - Click "+ Add service".
+      - Enter Service name: "Express Wash", Unit price: "60", Pricing unit: "per kg", Status: "Active".
+      - Click "Save service".
+      - Confirm that "Express Wash" appears in the Services table with price ₱60.00 and Active status.
+      - Click "Edit" next to "Express Wash", change price to "65", click "Save changes", and verify the price is updated.
+      - Click "Deactivate" next to "Express Wash" to change its status to "Inactive". Click "Activate" to reactivate.
+      - Navigate to "Overview" and click "+ Create order". Open the "Service" dropdown and confirm "Express Wash" is available for selection!
+   6. Test Admin User Management:
+      - Go back to "Settings".
+      - In the "Admin users" section, click "+ Add user".
+      - Enter First name: "Maria", Last name: "Santos", Username: "maria.admin", Password: "SecurePassword123!", Role: "Admin", Status: "Active".
+      - Click "Save user".
+      - Verify that "Maria Santos" appears in the Admin Users table with username "maria.admin" and "Admin" role.
+      - Click "Edit" on the user, change Role to "Staff", click "Save changes", and verify the role updates.
+
+B. MONGODB BACKEND TEST (When connected to a MongoDB database)
+   1. Configure `.env` with your `MONGODB_URI` and run setup:
+      `npm run backend:setup`
+   2. Start the server:
+      `npm start`
+   3. Open `http://localhost:3000/login` in your browser:
+      - Confirm the login screen says "Sign in | Banjo Laundry" and "BANJO LAUNDRY WORKSPACE".
+      - Sign in with your bootstrap admin credentials.
+   4. Navigate to Settings:
+      - Go to `#settings`.
+      - Add a new service and a new admin/staff user.
+      - Refresh the page to verify that the newly created services and users are retrieved directly from MongoDB.
+      - Sign out and verify that the newly added admin or staff account can sign in successfully with their credentials.
+================================================================================

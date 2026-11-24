@@ -10,7 +10,7 @@ async function snapshot(db,user) {
     if(records.length>10000)fail('The workspace exceeds the current bootstrap limit. Server-side UI pagination is required.',413);
     data[name]=clean(records);
   }
-  data.users=clean(await db.collection('users').find({},{projection:{user_id:1,first_name:1,last_name:1}}).toArray());
+  data.users=clean(await db.collection('users').find({},{projection:{password_hash:0}}).toArray());
   return data;
 }
 async function command(client,db,user,body,key) {

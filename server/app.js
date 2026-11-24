@@ -15,7 +15,7 @@ async function createApp({client,db,origin='http://localhost:3000',secure=false}
   app.use((req,res,next)=>{res.setHeader('Cache-Control','no-store');if(!['GET','HEAD','OPTIONS'].includes(req.method)&&req.get('origin')!==origin)return res.status(403).json({error:'Request origin is not allowed.'});next();});
   const cookie={httpOnly:true,sameSite:'strict',secure,path:'/',maxAge:8*3600000};
   async function session(req,res,next) {
-    const token=(req.headers.cookie||'').split(';').map((value)=>value.trim()).find((value)=>value.startsWith('bubblewash_session='))?.slice('bubblewash_session='.length);
+    const token=(req.headers.cookie||'').split(';').map((value)=>value.trim()).find((value)=>value.startsWith('banjolaundry_session='))?.slice('banjolaundry_session='.length);
     if(token&&/^[a-f0-9]{64}$/.test(token)) {
       const record=await db.collection('sessions').findOne({token_hash:tokenHash(token),expires_at:{$gt:new Date()}});
       if(record) {req.sessionHash=record.token_hash;req.user=await db.collection('users').findOne({user_id:record.user_id,account_status:'Active',role:{$in:['Admin','Staff']}});}
@@ -33,16 +33,85 @@ async function createApp({client,db,origin='http://localhost:3000',secure=false}
     if(!valid||!user||user.account_status!=='Active'||!['Admin','Staff'].includes(user.role))fail('Invalid username or password.',401);
     if(req.sessionHash)await db.collection('sessions').deleteOne({token_hash:req.sessionHash});
     const token=randomBytes(32).toString('hex');await db.collection('sessions').insertOne({token_hash:tokenHash(token),user_id:user.user_id,expires_at:new Date(Date.now()+cookie.maxAge)});
-    res.cookie('bubblewash_session',token,cookie).json({user:clean(user)});
+    res.cookie('banjolaundry_session',token,cookie).json({user:clean(user)});
   });
   app.use('/api',(req,res,next)=>{if(!req.user)return res.status(401).json({error:'Sign in to continue.'});next();});
   app.get('/api/auth/me',(req,res)=>res.json({user:clean(req.user)}));
-  app.post('/api/auth/logout',async(req,res)=>{if(req.sessionHash)await db.collection('sessions').deleteOne({token_hash:req.sessionHash});res.clearCookie('bubblewash_session',{path:'/',httpOnly:true,sameSite:'strict',secure}).json({ok:true});});
+  app.post('/api/auth/logout',async(req,res)=>{if(req.sessionHash)await db.collection('sessions').deleteOne({token_hash:req.sessionHash});res.clearCookie('banjolaundry_session',{path:'/',httpOnly:true,sameSite:'strict',secure}).json({ok:true});});
   app.get('/api/bootstrap',async(req,res)=>res.json(await snapshot(db,req.user)));
   app.post('/api/commands',async(req,res)=>res.json(await command(client,db,req.user,req.body,req.get('idempotency-key'))));
   app.post('/api/customers',async(req,res)=>res.status(201).json(await saveCustomer(client,db,req.body,null,{key:req.get('idempotency-key'),userId:req.user.user_id})));
   app.patch('/api/customers/:id',async(req,res)=>res.json(await saveCustomer(client,db,req.body,id(Number(req.params.id)))));
   app.delete('/api/customers/:id',async(req,res)=>{await deleteCustomer(client,db,id(Number(req.params.id)),id(req.body._version,'Version'));res.json({ok:true});});
+
+  /* Services management */
+  app.post('/api/services',async(req,res)=>{
+    if(req.user.role!=='Admin')return res.status(403).json({error:'Only admins can add services.'});
+    const {service_name,unit_price,pricing_unit,service_status,description}=req.body;
+    if(!service_name||typeof service_name!=='string'||service_name.trim().length>50)return res.status(400).json({error:'Service name must be 1–50 characters.'});
+    if(!['per kg','per load'].includes(pricing_unit))return res.status(400).json({error:'Pricing unit must be per kg or per load.'});
+    if(!Number.isFinite(Number(unit_price))||Number(unit_price)<=0)return res.status(400).json({error:'Unit price must be a positive number.'});
+    const {Decimal128}=require('mongodb');
+    const nextId_=require('./database').nextId;
+    const sid=await nextId_(db,'services');
+    const record={service_id:sid,service_name:service_name.trim(),description:description||null,pricing_unit,unit_price:Decimal128.fromString(Number(unit_price).toFixed(2)),service_status:service_status||'Active'};
+    await db.collection('services').insertOne(record);
+    res.status(201).json(clean(record));
+  });
+  app.patch('/api/services/:id',async(req,res)=>{
+    if(req.user.role!=='Admin')return res.status(403).json({error:'Only admins can edit services.'});
+    const sid=id(Number(req.params.id));
+    const existing=await db.collection('services').findOne({service_id:sid});
+    if(!existing)return res.status(404).json({error:'Service not found.'});
+    const {service_name,unit_price,pricing_unit,service_status,description}=req.body;
+    const update={};
+    if(service_name!==undefined){if(typeof service_name!=='string'||service_name.trim().length>50)return res.status(400).json({error:'Service name must be 1–50 characters.'});update.service_name=service_name.trim();}
+    if(unit_price!==undefined){if(!Number.isFinite(Number(unit_price))||Number(unit_price)<=0)return res.status(400).json({error:'Unit price must be positive.'});const {Decimal128}=require('mongodb');update.unit_price=Decimal128.fromString(Number(unit_price).toFixed(2));}
+    if(pricing_unit!==undefined){if(!['per kg','per load'].includes(pricing_unit))return res.status(400).json({error:'Pricing unit must be per kg or per load.'});update.pricing_unit=pricing_unit;}
+    if(service_status!==undefined){if(!['Active','Inactive'].includes(service_status))return res.status(400).json({error:'Status must be Active or Inactive.'});update.service_status=service_status;}
+    if(description!==undefined)update.description=description||null;
+    await db.collection('services').updateOne({service_id:sid},{$set:update});
+    const updated=await db.collection('services').findOne({service_id:sid});
+    res.json(clean(updated));
+  });
+
+  /* User management */
+  app.post('/api/users',async(req,res)=>{
+    if(req.user.role!=='Admin')return res.status(403).json({error:'Only admins can add users.'});
+    const {first_name,last_name,username,password,role,account_status}=req.body;
+    if(!first_name||!last_name||typeof first_name!=='string'||typeof last_name!=='string')return res.status(400).json({error:'Enter first and last names.'});
+    if(!username||typeof username!=='string'||username.length>30)return res.status(400).json({error:'Username must be 1–30 characters.'});
+    if(!password||typeof password!=='string'||password.length<12||password.length>128)return res.status(400).json({error:'Password must be 12–128 characters.'});
+    if(!['Admin','Staff'].includes(role))return res.status(400).json({error:'Role must be Admin or Staff.'});
+    const existing=await db.collection('users').findOne({username});
+    if(existing)return res.status(409).json({error:'A user with this username already exists.'});
+    const nextId_=require('./database').nextId;
+    const uid=await nextId_(db,'users');
+    const record={user_id:uid,first_name:first_name.trim(),last_name:last_name.trim(),username,password_hash:await hashPassword(password),role,account_status:account_status||'Active',created_at:new Date()};
+    await db.collection('users').insertOne(record);
+    res.status(201).json(clean(record));
+  });
+  app.patch('/api/users/:id',async(req,res)=>{
+    if(req.user.role!=='Admin')return res.status(403).json({error:'Only admins can edit users.'});
+    const uid=id(Number(req.params.id));
+    const existing=await db.collection('users').findOne({user_id:uid});
+    if(!existing)return res.status(404).json({error:'User not found.'});
+    const {first_name,last_name,username,password,role,account_status}=req.body;
+    const update={};
+    if(first_name!==undefined)update.first_name=first_name.trim();
+    if(last_name!==undefined)update.last_name=last_name.trim();
+    if(username!==undefined){
+      if(typeof username!=='string'||username.length>30)return res.status(400).json({error:'Username must be 1–30 characters.'});
+      if(username!==existing.username){const dup=await db.collection('users').findOne({username});if(dup)return res.status(409).json({error:'Username already taken.'});}
+      update.username=username;
+    }
+    if(password){if(password.length<12||password.length>128)return res.status(400).json({error:'Password must be 12–128 characters.'});update.password_hash=await hashPassword(password);}
+    if(role!==undefined){if(!['Admin','Staff'].includes(role))return res.status(400).json({error:'Role must be Admin or Staff.'});update.role=role;}
+    if(account_status!==undefined){if(!['Active','Inactive'].includes(account_status))return res.status(400).json({error:'Status must be Active or Inactive.'});update.account_status=account_status;}
+    await db.collection('users').updateOne({user_id:uid},{$set:update});
+    const updated=await db.collection('users').findOne({user_id:uid});
+    res.json(clean(updated));
+  });
   function filter(req,field) {
     const match={};
     if(req.query.from||req.query.to) {

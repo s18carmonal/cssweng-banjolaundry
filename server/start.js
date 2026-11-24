@@ -6,7 +6,7 @@ const {createApp}=require('./app');
 async function main() {
   if(!process.env.MONGODB_URI)throw new Error('Create .env from .env.example and set MONGODB_URI.');
   const port=Number(process.env.PORT||3000),host=process.env.HOST||'0.0.0.0';
-  const dbName=process.env.MONGODB_DB||'bubblewash_development';
+  const dbName=process.env.MONGODB_DB||'banjolaundry_development';
   if(!/^[a-zA-Z0-9_-]+$/.test(dbName))throw new Error('Use a simple MONGODB_DB name.');
   const client=new MongoClient(process.env.MONGODB_URI,{serverSelectionTimeoutMS:10000});
   try {
@@ -19,7 +19,7 @@ async function main() {
       console.log('Setup complete: admin and three starter services are ready. Existing passwords and service prices were preserved.');await client.close();return;
     }
     const app=await createApp({client,db,origin:process.env.PUBLIC_ORIGIN||`http://localhost:${port}`,secure:process.env.NODE_ENV==='production'});
-    const server=app.listen(port,host,()=>console.log(`BubbleWash: ${process.env.PUBLIC_ORIGIN||`http://localhost:${port}`} (MongoDB mode)`));
+    const server=app.listen(port,host,()=>console.log(`Banjo Laundry: ${process.env.PUBLIC_ORIGIN||`http://localhost:${port}`} (MongoDB mode)`));
     for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.close(async()=>{await client.close();process.exit(0);}));
   }catch(error){await client.close();throw error;}
 }
